@@ -125,10 +125,14 @@ struct ui_data
     bool RemoteWindow = true;
     int GetRemotePressed = false;
     
+    bool SendWindow = true;
+    int SendPressed = false;
+    
     char *port;
     
     char *RemotePort;
     
+    char *Message;
 };
 
 
@@ -193,7 +197,6 @@ void imguistuff(win32_windowdim Dim, ui_data *Data, int LeftMouse)
         ImGui::End();
     }
     
-#if 1
     if(Data->SocketGetWindow)
     {
         ImGui::Begin("Socket", &Data->SocketGetWindow,  ImGuiWindowFlags_None);
@@ -218,7 +221,19 @@ void imguistuff(win32_windowdim Dim, ui_data *Data, int LeftMouse)
         
         ImGui::End();
     }
-#endif 
+    
+    if(Data->SendWindow)
+    {
+        ImGui::Begin("Send Box", &Data->SendWindow, ImGuiWindowFlags_None);
+        ImGui::InputText("message input##text3", Data->Message, sizeof(char) * 50);
+        
+        if (ImGui::Button("Send Message"))
+        {
+            Data->SendPressed = true;
+        }
+        
+        ImGui::End();
+    }
     
     Data->Console.Draw("Console", &Data->ConsoleOpen);
     

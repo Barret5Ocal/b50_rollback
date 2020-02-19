@@ -1,6 +1,9 @@
 //#include <windows.h>
+#include <winsock2.h>
+#include <Ws2ipdef.h>
+#include <Ws2tcpip.h>
+
 #include <stdio.h>
-#include "network.cpp"
 
 
 static int Running = 1; 
@@ -99,6 +102,8 @@ struct win32_windowdim
 #include "include\stb_truetype.h"
 
 #endif
+
+#include "network.cpp"
 
 int spacebar = 0;
 
@@ -297,11 +302,12 @@ int WinMain(HINSTANCE Instance,
         
         char port[5] = {};
         char RemotePort[5] = {};
-        
+        char Message[51] = {}; 
         
         
         UIData.port = port;
         UIData.RemotePort = RemotePort;
+        UIData.Message = Message; 
         
         //UIData.ConnectPressed = false;
         //UIData.GetSocketPressed = false;
@@ -328,12 +334,17 @@ int WinMain(HINSTANCE Instance,
                 char print2[50] = {};
                 
                 char *PrintOut[2] = {print1, print2};
+                
+                NData.port = atoi(UIData.port);
+#if 0
                 GetIPAddress(&NData.res, UIData.port, PrintOut);
+                
                 
                 for(int i = 0;
                     i < ArrayCount(PrintOut);
                     i++)
                     UIData.Console.AddLog(PrintOut[i]);
+#endif 
             }
             
             
@@ -341,26 +352,69 @@ int WinMain(HINSTANCE Instance,
             {
                 UIData.GetSocketPressed = false;
                 
-                char PrintOut[50] = {};
-                NData.Socket = CreateSocket(NData.res, PrintOut);
                 
+                
+                char print1[50] = {};
+                char print2[50] = {};
+                
+                char *PrintOut[2] = {print1, print2};
+                //NData.Socket = CreateSocket(NData.res, PrintOut);
+                SocketOpen(&NData.Socket, NData.port, &UIData.Console);
+                
+#if 0
                 if(NData.Socket)
-                    UIData.Console.AddLog(PrintOut);
+                {
+                    for(int i = 0;
+                        i < ArrayCount(PrintOut);
+                        i++)
+                        UIData.Console.AddLog(PrintOut[i]);
+                }
                 else 
                     UIData.Console.AddLog("Failed To Get Socket");
+#endif 
             }
             
             if(UIData.GetRemotePressed)
             {
                 UIData.GetRemotePressed = false;
                 
-                FindConnection(NData.Remote, UIData.RemotePort);
+                FindConnection(&NData.Remote, UIData.RemotePort);
                 
                 char PrintOut[25] = {};
                 sprintf(PrintOut, "remote port #: %s\n", UIData.RemotePort);
                 UIData.Console.AddLog(PrintOut);
                 
             }
+            
+            
+            if(UIData.SendPressed)
+            {
+                UIData.SendPressed = false;
+                
+                SendMessage(UIData.Message, NData.Socket, &NData.Remote);
+                
+                char PrintOut[100] = {};
+                sprintf(PrintOut, "Sending Message: %s\n", UIData.Message);
+                UIData.Console.AddLog(PrintOut);
+                
+            }
+            
+            
+            char print1[25] = {};
+            char print2[25] = {};
+            char print3[100] = {};
+            
+            char *PrintOut[3] = {print1, print2, print3};
+            int yes = Recieve(NData.Socket, PrintOut);
+            
+            if(yes)
+            {
+                for(int i = 0;
+                    i < ArrayCount(PrintOut);
+                    i++)
+                    UIData.Console.AddLog(PrintOut[i]);
+            }
+            
             
             // TODO(Barret5Ocal): might need to switch back to windows to get inputs without the need to stop the program
             Dim = Win32GetWindowDim(Window);

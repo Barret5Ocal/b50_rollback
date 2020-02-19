@@ -1,12 +1,10 @@
-#include <winsock2.h>
-#include <Ws2ipdef.h>
-#include <Ws2tcpip.h>
 
 struct network_data
 {
     addrinfo *res;
+    u16 port;
     int Socket;
-    sockaddr_in *Remote;
+    sockaddr_in Remote;
 };
 
 void StartUpNetwork()
@@ -87,20 +85,64 @@ int GetIPAddress(addrinfo **res, char *port, char **PrintOut)
     return 0;
 }
 
-int CreateSocket(addrinfo *res, char *PrintOut)
+int CreateSocket(addrinfo *res, char **PrintOut)
 {
     if(res)
     {
         int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-        sprintf(PrintOut, "socket #: %i\n", sockfd);
+        sprintf(PrintOut[0], "socket #: %i\n", sockfd);
         
-        
+        if(bind(sockfd, res->ai_addr, res->ai_addrlen) == -1)
+        {
+            PrintOut[1] = "BIND FAILED";
+        }
         return sockfd;
     }
     else 
     {
         return 0;
     }
+}
+
+// NOTE(Barret5Ocal): try using this instead of getip and create socket
+bool SocketOpen(int *Socket, unsigned short port, ui_console *Console)
+{
+    *Socket = socket( AF_INET,
+                     SOCK_DGRAM,
+                     IPPROTO_UDP );
+    
+    if ( *Socket <= 0 )
+    {
+        printf( "failed to create socket\n" );
+        return false;
+    }
+    
+    sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons( (unsigned short) port );
+    
+    if ( bind( *Socket,
+              (const sockaddr*) &address,
+              sizeof(sockaddr_in) ) < 0 )
+    {
+        Console->AddLog( "failed to bind socket\n" );
+        return false;
+    }
+    Console->AddLog( "Listening on port %d\n", port );
+    
+    
+    
+    DWORD nonBlocking = 1;
+    if ( ioctlsocket( *Socket,
+                     FIONBIO,
+                     &nonBlocking ) != 0 )
+    {
+        Console->AddLog( "failed to set non-blocking\n" );
+        return false;
+    }
+    
+    return true;
 }
 
 int FindConnection(sockaddr_in *connection, char *port)
@@ -122,7 +164,7 @@ int FindConnection(sockaddr_in *connection, char *port)
     return 1;
 }
 
-int SendMessage(char *Message, int sockfd, sockaddr *addr)
+int SendMessage(char *Message, int sockfd, sockaddr_in *addr)
 {
     printf("sending %s", Message);
     
@@ -158,7 +200,9 @@ int Recieve(int sockfd, char *PrintOut[3])
         sprintf(PrintOut[1], "listener: packet is %d bytes long\n", numbytes);
         buf[numbytes] = '\0';
         sprintf(PrintOut[2], "listener: packet contains \"%s\"\n", buf);
+        
+        return 1;
     }
     
-    return 1;
+    return 0;
 }
