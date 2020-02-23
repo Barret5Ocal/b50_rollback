@@ -233,9 +233,12 @@ MainWindowProc(HWND Window,
         }break;
         case WM_KEYDOWN:
         {
-            unsigned char c = MapVirtualKeyA(WParam, MAPVK_VK_TO_CHAR);
+#if 1
+            unsigned short c = MapVirtualKeyW(WParam, MAPVK_VK_TO_CHAR);
             ImGuiIO& io = ImGui::GetIO();
             io.AddInputCharacter(c);
+#endif
+            
         }break;
         
         case WM_LBUTTONDOWN: 
@@ -325,6 +328,16 @@ int WinMain(HINSTANCE Instance,
                 DispatchMessage(&Message);
             }
             
+            PBYTE Keyboard[256] = {};
+            if(GetKeyboardState(Keyboard[0]))
+                InvalidCodePath;
+            
+            ImGuiIO& io = ImGui::GetIO();
+            for(int i = 0;
+                i < 256;
+                i++)
+                io.KeysDown[i] = Keyboard[i];
+            
             
             if(UIData.ConnectPressed)
             {
@@ -336,9 +349,8 @@ int WinMain(HINSTANCE Instance,
                 char *PrintOut[2] = {print1, print2};
                 
                 NData.port = atoi(UIData.port);
-#if 0
+#if 1
                 GetIPAddress(&NData.res, UIData.port, PrintOut);
-                
                 
                 for(int i = 0;
                     i < ArrayCount(PrintOut);
@@ -352,26 +364,12 @@ int WinMain(HINSTANCE Instance,
             {
                 UIData.GetSocketPressed = false;
                 
-                
-                
                 char print1[50] = {};
                 char print2[50] = {};
                 
                 char *PrintOut[2] = {print1, print2};
-                //NData.Socket = CreateSocket(NData.res, PrintOut);
-                SocketOpen(&NData.Socket, NData.port, &UIData.Console);
-                
-#if 0
-                if(NData.Socket)
-                {
-                    for(int i = 0;
-                        i < ArrayCount(PrintOut);
-                        i++)
-                        UIData.Console.AddLog(PrintOut[i]);
-                }
-                else 
-                    UIData.Console.AddLog("Failed To Get Socket");
-#endif 
+                NData.Socket = CreateSocket(NData.res, &UIData.Console);
+                //CreateSocket(&NData.Socket, NData.port, &UIData.Console);
             }
             
             if(UIData.GetRemotePressed)
@@ -399,6 +397,8 @@ int WinMain(HINSTANCE Instance,
                 
             }
             
+            // TODO(Barret5Ocal): FILL THIS OUT
+            //WSAPoll();
             
             char print1[25] = {};
             char print2[25] = {};

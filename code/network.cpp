@@ -85,21 +85,29 @@ int GetIPAddress(addrinfo **res, char *port, char **PrintOut)
     return 0;
 }
 
-int CreateSocket(addrinfo *res, char **PrintOut)
+int CreateSocket(addrinfo *res, ui_console *Console)
 {
     if(res)
     {
         int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-        sprintf(PrintOut[0], "socket #: %i\n", sockfd);
+        Console->AddLog("socket #: %i\n", sockfd);
         
-        if(bind(sockfd, res->ai_addr, res->ai_addrlen) == -1)
+        
+        DWORD nonBlocking = 1;
+        if ( ioctlsocket( sockfd,
+                         FIONBIO,
+                         &nonBlocking ) != 0 )
         {
-            PrintOut[1] = "BIND FAILED";
+            Console->AddLog( "failed to set non-blocking\n" );
+            return false;
         }
+        Console->AddLog( "socket is non-blocking\n" );
+        
         return sockfd;
     }
     else 
     {
+        Console->AddLog( "res is null\n" );
         return 0;
     }
 }

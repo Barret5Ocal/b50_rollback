@@ -151,7 +151,7 @@ void imguisetup()
     float FrameRate = 60;
     float dt = 1 / FrameRate; 
     io.DeltaTime = dt;
-    io.WantCaptureKeyboard = true;
+    //io.WantCaptureKeyboard = true;
     
     
     
