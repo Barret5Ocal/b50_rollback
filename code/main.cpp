@@ -2,7 +2,7 @@
 #include <winsock2.h>
 #include <Ws2ipdef.h>
 #include <Ws2tcpip.h>
-
+#include <thread>
 #include <stdio.h>
 
 
@@ -317,6 +317,15 @@ int WinMain(HINSTANCE Instance,
         
         network_data NData = {};
         
+        HANDLE ThreadHandle = CreateThread(
+            LPSECURITY_ATTRIBUTES   lpThreadAttributes,
+            SIZE_T                  dwStackSize,
+            LPTHREAD_START_ROUTINE  lpStartAddress,
+            __drv_aliasesMem LPVOID lpParameter,
+            DWORD                   dwCreationFlags,
+            LPDWORD                 lpThreadId
+            );
+        
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, 60))
@@ -339,26 +348,6 @@ int WinMain(HINSTANCE Instance,
                 io.KeysDown[i] = Keyboard[i];
             
             
-            if(UIData.ConnectPressed)
-            {
-                UIData.ConnectPressed = false;
-                
-                char print1[50] = {};
-                char print2[50] = {};
-                
-                char *PrintOut[2] = {print1, print2};
-                
-                NData.port = atoi(UIData.port);
-#if 1
-                GetIPAddress(&NData.res, UIData.port, PrintOut);
-                
-                for(int i = 0;
-                    i < ArrayCount(PrintOut);
-                    i++)
-                    UIData.Console.AddLog(PrintOut[i]);
-#endif 
-            }
-            
             
             if(UIData.GetSocketPressed)
             {
@@ -368,7 +357,8 @@ int WinMain(HINSTANCE Instance,
                 char print2[50] = {};
                 
                 char *PrintOut[2] = {print1, print2};
-                NData.Socket = CreateSocket(NData.res, &UIData.Console);
+                NData.SendSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
+                NData.ReceiveSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
                 //CreateSocket(&NData.Socket, NData.port, &UIData.Console);
             }
             
@@ -389,23 +379,19 @@ int WinMain(HINSTANCE Instance,
             {
                 UIData.SendPressed = false;
                 
-                SendMessage(UIData.Message, NData.Socket, &NData.Remote);
+                SendMessage(UIData.Message, NData.SendSocket, &NData.Remote);
                 
                 char PrintOut[100] = {};
                 sprintf(PrintOut, "Sending Message: %s\n", UIData.Message);
                 UIData.Console.AddLog(PrintOut);
-                
             }
-            
-            // TODO(Barret5Ocal): FILL THIS OUT
-            //WSAPoll();
             
             char print1[25] = {};
             char print2[25] = {};
             char print3[100] = {};
             
             char *PrintOut[3] = {print1, print2, print3};
-            int yes = Recieve(NData.Socket, PrintOut);
+            int yes = Recieve(NData.ReceiveSocket, PrintOut);
             
             if(yes)
             {
@@ -437,6 +423,8 @@ int WinMain(HINSTANCE Instance,
             ReleaseDC(Window, WindowDC);
             
         }
+        
+        
         
         EndDownNetwork();
         

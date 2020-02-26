@@ -3,7 +3,8 @@ struct network_data
 {
     addrinfo *res;
     u16 port;
-    int Socket;
+    int SendSocket;
+    int ReceiveSocket;
     sockaddr_in Remote;
 };
 
@@ -85,32 +86,48 @@ int GetIPAddress(addrinfo **res, char *port, char **PrintOut)
     return 0;
 }
 
-int CreateSocket(addrinfo *res, ui_console *Console)
+int CreateSocket(int port, ui_console *Console)
 {
-    if(res)
+    
+    //int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    int sockfd = socket( AF_INET,
+                        SOCK_DGRAM,
+                        IPPROTO_UDP );
+    Console->AddLog("socket #: %i\n", sockfd);
+    
+    sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons( (unsigned short) port );
+    
+    char one = 1;
+    if(setsockopt((SOCKET)sockfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1)
     {
-        int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-        Console->AddLog("socket #: %i\n", sockfd);
-        
-        
-        DWORD nonBlocking = 1;
-        if ( ioctlsocket( sockfd,
-                         FIONBIO,
-                         &nonBlocking ) != 0 )
-        {
-            Console->AddLog( "failed to set non-blocking\n" );
-            return false;
-        }
-        Console->AddLog( "socket is non-blocking\n" );
-        
-        return sockfd;
-    }
-    else 
-    {
-        Console->AddLog( "res is null\n" );
+        Console->AddLog("setsockopt failed");
         return 0;
+    } 
+    
+    if ( bind( sockfd,
+              (const sockaddr*) &address,
+              sizeof(sockaddr_in) ) < 0 )
+    {
+        Console->AddLog( "failed to bind socket %i\n", errno );
+        return false;
     }
+    
+    DWORD nonBlocking = 1;
+    if ( ioctlsocket( sockfd,
+                     FIONBIO,
+                     &nonBlocking ) != 0 )
+    {
+        Console->AddLog( "failed to set non-blocking\n" );
+        return false;
+    }
+    Console->AddLog( "socket is non-blocking\n" );
+    
+    return sockfd;
 }
+
 
 // NOTE(Barret5Ocal): try using this instead of getip and create socket
 bool SocketOpen(int *Socket, unsigned short port, ui_console *Console)

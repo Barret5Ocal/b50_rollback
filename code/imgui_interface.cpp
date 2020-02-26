@@ -182,24 +182,11 @@ void imguistuff(win32_windowdim Dim, ui_data *Data, int LeftMouse)
     io.WantTextInput = true;
     
     
-    // NOTE(Barret5Ocal): GUI stuff
-    if(Data->ConnectEditWindow)
-    {
-        ImGui::Begin("Connect", &Data->ConnectEditWindow, ImGuiWindowFlags_None);
-        ImGui::InputText("port number##text1", Data->port, sizeof(char) * 5);
-        
-        if (ImGui::Button("Connect"))
-        {
-            Data->Console.AddLog("connecting to %s", Data->port);
-            Data->ConnectPressed = true;
-        }
-        
-        ImGui::End();
-    }
     
     if(Data->SocketGetWindow)
     {
         ImGui::Begin("Socket", &Data->SocketGetWindow,  ImGuiWindowFlags_None);
+        ImGui::InputText("port##text1", Data->port, sizeof(char) * 5);
         if (ImGui::Button("Get Socket"))
         {
             Data->GetSocketPressed = true;
