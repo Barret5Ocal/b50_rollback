@@ -258,6 +258,14 @@ MainWindowProc(HWND Window,
     return Result; 
 }
 
+DWORD WINAPI 
+ThreadProc(LPVOID lpParameter)
+{
+    char *Param = (char *)lpParameter;
+    OutputDebugStringA(Param);
+    return 0;
+}
+
 int WinMain(HINSTANCE Instance, 
             HINSTANCE PrevInstance,
             LPSTR CmdLine,
@@ -317,15 +325,9 @@ int WinMain(HINSTANCE Instance,
         
         network_data NData = {};
         
-        HANDLE ThreadHandle = CreateThread(
-            LPSECURITY_ATTRIBUTES   lpThreadAttributes,
-            SIZE_T                  dwStackSize,
-            LPTHREAD_START_ROUTINE  lpStartAddress,
-            __drv_aliasesMem LPVOID lpParameter,
-            DWORD                   dwCreationFlags,
-            LPDWORD                 lpThreadId
-            );
-        
+        char *Param = "Thread";
+        DWORD ThreadID;
+        HANDLE ThreadHandle = CreateThread(0, 0, ThreadProc, Param, 0, &ThreadID);
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, 60))
