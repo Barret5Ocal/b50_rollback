@@ -1,14 +1,7 @@
-//#include <windows.h>
-#include <winsock2.h>
-#include <Ws2ipdef.h>
-#include <Ws2tcpip.h>
-#include <thread>
 #include <stdio.h>
+#include <conio.h>
+#include "WS2tcpip.h"
 
-
-static int Running = 1; 
-
-#include "b50_timing.h"
 
 #include <float.h>
 
@@ -81,12 +74,6 @@ typedef double r64;
 #include "stb_rect_pack.h"
 
 
-struct win32_windowdim 
-{
-    int Width, Height; 
-    int x, y;
-    //int DisplayWidth, DisplayHeight; 
-};
 
 #if IMGUI
 #include "imgui.cpp"
@@ -99,79 +86,14 @@ struct win32_windowdim
 #include "imgui_interface.cpp"
 #else 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "include\stb_truetype.h"
+#include "stb_truetype.h"
 
 #endif
 
 #include "network.cpp"
 
-int spacebar = 0;
 
-
-win32_windowdim Win32GetWindowDim(HWND Window)
-{
-    win32_windowdim Dim = {};
-    
-    RECT Rect = {};
-    //GetClientRect(Window, &Rect);
-    GetWindowRect(Window, &Rect);
-    Dim.x = Rect.left;
-    Dim.y = Rect.top;
-    Dim.Width = Rect.right - Rect.left;
-    Dim.Height = Rect.bottom - Rect.top;
-    return Dim; 
-}
-
-GLuint CreateShaderProgram(char *VertCode, int VertSize, char *FragCode, int FragSize)
-{
-    GLuint ShaderProgram = glCreateProgram();
-    GLuint VertexShaderObj = glCreateShader(GL_VERTEX_SHADER);
-    GLuint FragShaderObj = glCreateShader(GL_FRAGMENT_SHADER);
-    
-    glShaderSource(VertexShaderObj, 1, &VertCode, &VertSize);
-    glShaderSource(FragShaderObj, 1, &FragCode, &FragSize);
-    
-    glCompileShader(VertexShaderObj);
-    glCompileShader(FragShaderObj);
-    
-    GLint success;
-    glGetShaderiv(VertexShaderObj, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        char Buffer[1024];
-        GLchar InfoLog[1024];
-        glGetShaderInfoLog(VertexShaderObj, sizeof(InfoLog), NULL, InfoLog);
-        stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_VERTEX_SHADER, InfoLog);
-        OutputDebugStringA(Buffer);
-        InvalidCodePath; 
-    }
-    
-    glGetShaderiv(FragShaderObj, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        char Buffer[1024];
-        GLchar InfoLog[1024];
-        glGetShaderInfoLog(FragShaderObj, sizeof(InfoLog), NULL, InfoLog);
-        stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_FRAGMENT_SHADER, InfoLog);
-        OutputDebugStringA(Buffer);
-        InvalidCodePath; 
-    }
-    
-    glAttachShader(ShaderProgram, VertexShaderObj);
-    glAttachShader(ShaderProgram, FragShaderObj);
-    
-    glLinkProgram(ShaderProgram);
-    
-    glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &success);
-    if (success == 0) {
-        char Buffer[1024];
-        GLchar ErrorLog[1024];
-        glGetProgramInfoLog(ShaderProgram, sizeof(ErrorLog), NULL, ErrorLog);
-        stbsp_sprintf(Buffer, "Error linking shader program: '%s'\n", ErrorLog);
-        OutputDebugStringA(Buffer);
-        InvalidCodePath; 
-    }
-    
-    return ShaderProgram; 
-}
+#include "b50_timing.h"
 
 struct read_results
 {
@@ -212,7 +134,6 @@ read_results Win32GetFileContents(char *Filename)
 }
 
 int LeftMouse = 0;
-
 LRESULT CALLBACK
 MainWindowProc(HWND Window,
                UINT Message,
@@ -225,11 +146,11 @@ MainWindowProc(HWND Window,
     {
         case WM_DESTROY:
         {
-            Running = 0;
+            b50_Running = 0;
         }break;
         case WM_CLOSE:
         {
-            Running = 0;
+            b50_Running = 0;
         }break;
         case WM_KEYDOWN:
         {
@@ -258,20 +179,9 @@ MainWindowProc(HWND Window,
     return Result; 
 }
 
-DWORD WINAPI 
-ThreadProc(LPVOID lpParameter)
+//int main(int argc, char *argv[])
+int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int       ShowCmd)
 {
-    char *Param = (char *)lpParameter;
-    OutputDebugStringA(Param);
-    return 0;
-}
-
-int WinMain(HINSTANCE Instance, 
-            HINSTANCE PrevInstance,
-            LPSTR CmdLine,
-            int ShowCode)
-{
-    
     WNDCLASS WindowClass = {};
     WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
     WindowClass.lpfnWndProc = MainWindowProc;
@@ -299,12 +209,12 @@ int WinMain(HINSTANCE Instance,
         
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
-        StartUpNetwork();
-        
-        
-        //if(connect(sockfd, res->ai_addr, res->ai_addrlen) == -1)
-        //return 0;
         imguisetup();
+        
+        network_data Data = {};
+        
+        
+        
         
         
         ui_data UIData = {};
@@ -316,18 +226,14 @@ int WinMain(HINSTANCE Instance,
         char Message[51] = {}; 
         
         
-        UIData.port = port;
-        UIData.RemotePort = RemotePort;
+        UIData.Sport = port;
+        UIData.Rport = RemotePort;
         UIData.Message = Message; 
         
-        //UIData.ConnectPressed = false;
-        //UIData.GetSocketPressed = false;
+        int Sindex = 0;
+        char Sbuff[255] = {};
         
-        network_data NData = {};
-        
-        char *Param = "Thread";
-        DWORD ThreadID;
-        HANDLE ThreadHandle = CreateThread(0, 0, ThreadProc, Param, 0, &ThreadID);
+        char Rbuff[1024];
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, 60))
@@ -351,29 +257,16 @@ int WinMain(HINSTANCE Instance,
             
             
             
-            if(UIData.GetSocketPressed)
+            if(UIData.SetupPressed)
             {
-                UIData.GetSocketPressed = false;
+                UIData.SetupPressed = false;
                 
-                char print1[50] = {};
-                char print2[50] = {};
+                Setup(&Data, atoi(UIData.Sport), atoi(UIData.Rport), &UIData);
                 
-                char *PrintOut[2] = {print1, print2};
-                NData.SendSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
-                NData.ReceiveSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
+                
+                //NData.SendSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
+                //NData.ReceiveSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
                 //CreateSocket(&NData.Socket, NData.port, &UIData.Console);
-            }
-            
-            if(UIData.GetRemotePressed)
-            {
-                UIData.GetRemotePressed = false;
-                
-                FindConnection(&NData.Remote, UIData.RemotePort);
-                
-                char PrintOut[25] = {};
-                sprintf(PrintOut, "remote port #: %s\n", UIData.RemotePort);
-                UIData.Console.AddLog(PrintOut);
-                
             }
             
             
@@ -381,26 +274,31 @@ int WinMain(HINSTANCE Instance,
             {
                 UIData.SendPressed = false;
                 
-                SendMessage(UIData.Message, NData.SendSocket, &NData.Remote);
+                Send(UIData.Message, &Data, &UIData);
+                //SendMessage(UIData.Message, NData.SendSocket, &NData.Remote);
                 
                 char PrintOut[100] = {};
                 sprintf(PrintOut, "Sending Message: %s\n", UIData.Message);
                 UIData.Console.AddLog(PrintOut);
             }
             
-            char print1[25] = {};
-            char print2[25] = {};
-            char print3[100] = {};
-            
-            char *PrintOut[3] = {print1, print2, print3};
-            int yes = Recieve(NData.ReceiveSocket, PrintOut);
-            
-            if(yes)
+            //int yes = Recieve(NData.ReceiveSocket, PrintOut);
+            if(int bytesIn = Recieve(Rbuff, &Data))
             {
-                for(int i = 0;
-                    i < ArrayCount(PrintOut);
-                    i++)
-                    UIData.Console.AddLog(PrintOut[i]);
+                if(bytesIn == SOCKET_ERROR)
+                {
+                    UIData.Console.AddLog("Error receiving from client %d\n", WSAGetLastError());
+                    //printf("Error receiving from client %d\n", WSAGetLastError());
+                    continue;
+                }
+                
+                char clientIP[256];
+                ZeroMemory(clientIP, 256);
+                
+                inet_ntop(AF_INET, &Data.Client.sin_addr, clientIP, 256);
+                
+                UIData.Console.AddLog("Message recv from %s : %s\n", clientIP, Rbuff);
+                //printf("Message recv from %s : %s\n", clientIP, Rbuff);
             }
             
             
@@ -424,13 +322,50 @@ int WinMain(HINSTANCE Instance,
             
             ReleaseDC(Window, WindowDC);
             
+            
+#if 0
+            char s = 0;
+            if ( _kbhit() )
+            {
+                s = _getch();
+                _putch(s);
+                Sbuff[Sindex++] = s; 
+            }
+            
+            if(s == '\r')
+            {
+                _putch('\n');
+                Sbuff[Sindex] = '\0';
+                Sindex = 0;
+                
+                Send(Sindex, Sbuff, &Data);
+            }
+            
+            if(int bytesIn = Recieve(Rbuff, &Data))
+            {
+                if(bytesIn == SOCKET_ERROR)
+                {
+                    printf("Error receiving from client %d\n", WSAGetLastError());
+                    continue;
+                }
+                
+                char clientIP[256];
+                ZeroMemory(clientIP, 256);
+                
+                inet_ntop(AF_INET, &Data.Client.sin_addr, clientIP, 256);
+                
+                printf("Message recv from %s : %s\n", clientIP, Rbuff);
+            }
+#endif 
         }
         
         
-        
-        EndDownNetwork();
+        closesocket(Data.out);
+        closesocket(Data.in);
         
     }
     
-    return 0; 
+    WSACleanup();
+    
+    return 0;
 }

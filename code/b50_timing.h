@@ -1,5 +1,6 @@
 #define TIMING_DEBUG 0
 
+static int b50_Running = 0; 
 // NOTE(barret): debugging needs <stdio.h>
 
 struct time_info 
@@ -35,6 +36,44 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End, LARGE_INTEGER Fre
 bool
 RunLoop(time_info *TimeInfo, int FrameRate)
 {
+    DWORD SleepMS;
+    if (b50_Running)
+    {        
+        TimeInfo->EndCounter = Win32GetWallClock();
+        TimeInfo->SecondsElapsed = Win32GetSecondsElapsed(TimeInfo->LastCounter, TimeInfo->EndCounter, TimeInfo->SystemPerformanceFrequency); 
+        if (TimeInfo->SecondsElapsed < TimeInfo->TargetSecondsPerFrame)
+        {
+            if (TimeInfo->SleepIsGranular)
+            {
+                SleepMS = (DWORD)(1000.0f * (TimeInfo->TargetSecondsPerFrame - TimeInfo->SecondsElapsed));
+                
+                if (SleepMS > 0)
+                {
+                    Sleep(SleepMS);
+                }
+            }
+        }
+        
+#if TIMING_DEBUG 
+        double FPS = 0.0f;
+        double SecondsPerFrame = (double)TimeInfo->SecondsElapsed; 
+        double MSPerFrame = 1000.0f * SecondsPerFrame;
+        if(!TimeInfo->IsInitialized)
+            TimeInfo->MSPerFrameBegin = MSPerFrame;
+        double MSPerFrameChange = MSPerFrame - TimeInfo->MSPerFrameBegin;
+        
+        
+        char FPSBuffer[256];
+        stbsp_snprintf(FPSBuffer, sizeof(FPSBuffer),
+                       "SecondsPerFrame: %.09f MSPerFrame: %.09f Change: %.09f\n", (double)SecondsPerFrame, MSPerFrame, MSPerFrameChange);
+        OutputDebugStringA(FPSBuffer);
+#endif
+        
+        TimeInfo->LastCounter = TimeInfo->EndCounter;
+        return (1);
+    }
+    
+    
     if(!TimeInfo->IsInitialized)
     {    
         QueryPerformanceCounter(&TimeInfo->SystemPerformanceFrequency);
@@ -47,50 +86,11 @@ RunLoop(time_info *TimeInfo, int FrameRate)
         TimeInfo->LastCounter = Win32GetWallClock(); 
         
         TimeInfo->IsInitialized = 1;
+        
+        b50_Running = 1;
         return 1; 
     }
-    else
-    {
-        DWORD SleepMS;
-        if (Running)
-        {        
-            TimeInfo->EndCounter = Win32GetWallClock();
-            TimeInfo->SecondsElapsed = Win32GetSecondsElapsed(TimeInfo->LastCounter, TimeInfo->EndCounter, TimeInfo->SystemPerformanceFrequency); 
-            if (TimeInfo->SecondsElapsed < TimeInfo->TargetSecondsPerFrame)
-            {
-                if (TimeInfo->SleepIsGranular)
-                {
-                    SleepMS = (DWORD)(1000.0f * (TimeInfo->TargetSecondsPerFrame - TimeInfo->SecondsElapsed));
-                    
-                    if (SleepMS > 0)
-                    {
-                        Sleep(SleepMS);
-                    }
-                }
-            }
-            
-#if TIMING_DEBUG 
-            double FPS = 0.0f;
-            double SecondsPerFrame = (double)TimeInfo->SecondsElapsed; 
-            double MSPerFrame = 1000.0f * SecondsPerFrame;
-            if(!TimeInfo->IsInitialized)
-                TimeInfo->MSPerFrameBegin = MSPerFrame;
-            double MSPerFrameChange = MSPerFrame - TimeInfo->MSPerFrameBegin;
-            
-            
-            char FPSBuffer[256];
-            stbsp_snprintf(FPSBuffer, sizeof(FPSBuffer),
-                           "SecondsPerFrame: %.09f MSPerFrame: %.09f Change: %.09f\n", (double)SecondsPerFrame, MSPerFrame, MSPerFrameChange);
-            OutputDebugStringA(FPSBuffer);
-#endif
-            
-            TimeInfo->LastCounter = TimeInfo->EndCounter;
-            return (1);
-        }
-        else
-        {
-            return (0);
-        }
-    }
+    
+    return 0;
 }
 

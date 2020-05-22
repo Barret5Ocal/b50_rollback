@@ -115,22 +115,15 @@ struct ui_data
     bool ConsoleOpen;
     ui_console Console;
     
-    bool ConnectEditWindow = true;
-    int ConnectPressed = false;
     
-    bool SocketGetWindow = true;
-    int GetSocketPressed = false;
-    
-    
-    bool RemoteWindow = true;
-    int GetRemotePressed = false;
+    bool SetupWindow = true;
+    int SetupPressed = false;
     
     bool SendWindow = true;
     int SendPressed = false;
     
-    char *port;
-    
-    char *RemotePort;
+    char *Sport;
+    char *Rport;
     
     char *Message;
 };
@@ -183,29 +176,17 @@ void imguistuff(win32_windowdim Dim, ui_data *Data, int LeftMouse)
     
     
     
-    if(Data->SocketGetWindow)
+    if(Data->SetupWindow)
     {
-        ImGui::Begin("Socket", &Data->SocketGetWindow,  ImGuiWindowFlags_None);
-        ImGui::InputText("port##text1", Data->port, sizeof(char) * 5);
+        ImGui::Begin("Socket", &Data->SetupWindow,  ImGuiWindowFlags_None);
+        ImGui::InputText("Sport", Data->Sport, sizeof(char) * 5);
+        ImGui::InputText("Rport", Data->Rport, sizeof(char) * 5);
+        
         if (ImGui::Button("Get Socket"))
         {
-            Data->GetSocketPressed = true;
+            Data->SetupPressed = true;
             
         }
-        ImGui::End();
-    }
-    
-    if(Data->RemoteWindow)
-    {
-        
-        ImGui::Begin("Remote", &Data->RemoteWindow, ImGuiWindowFlags_None);
-        ImGui::InputText("remote number##text2", Data->RemotePort, sizeof(char) * 5);
-        
-        if (ImGui::Button("Get Remote"))
-        {
-            Data->GetRemotePressed = true;
-        }
-        
         ImGui::End();
     }
     

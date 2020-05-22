@@ -249,3 +249,74 @@ void Win32RenderFrame(HWND Window, int Width, int Height)
     ReleaseDC(Window, WindowDC);
 }
 
+struct win32_windowdim 
+{
+    int Width, Height; 
+    int x, y;
+    //int DisplayWidth, DisplayHeight; 
+};
+
+win32_windowdim Win32GetWindowDim(HWND Window)
+{
+    win32_windowdim Dim = {};
+    
+    RECT Rect = {};
+    //GetClientRect(Window, &Rect);
+    GetWindowRect(Window, &Rect);
+    Dim.x = Rect.left;
+    Dim.y = Rect.top;
+    Dim.Width = Rect.right - Rect.left;
+    Dim.Height = Rect.bottom - Rect.top;
+    return Dim; 
+}
+
+GLuint CreateShaderProgram(char *VertCode, int VertSize, char *FragCode, int FragSize)
+{
+    GLuint ShaderProgram = glCreateProgram();
+    GLuint VertexShaderObj = glCreateShader(GL_VERTEX_SHADER);
+    GLuint FragShaderObj = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    glShaderSource(VertexShaderObj, 1, &VertCode, &VertSize);
+    glShaderSource(FragShaderObj, 1, &FragCode, &FragSize);
+    
+    glCompileShader(VertexShaderObj);
+    glCompileShader(FragShaderObj);
+    
+    GLint success;
+    glGetShaderiv(VertexShaderObj, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char Buffer[1024];
+        GLchar InfoLog[1024];
+        glGetShaderInfoLog(VertexShaderObj, sizeof(InfoLog), NULL, InfoLog);
+        stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_VERTEX_SHADER, InfoLog);
+        OutputDebugStringA(Buffer);
+        InvalidCodePath; 
+    }
+    
+    glGetShaderiv(FragShaderObj, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char Buffer[1024];
+        GLchar InfoLog[1024];
+        glGetShaderInfoLog(FragShaderObj, sizeof(InfoLog), NULL, InfoLog);
+        stbsp_sprintf(Buffer , "Error compiling shader type %d: '%s'\n", GL_FRAGMENT_SHADER, InfoLog);
+        OutputDebugStringA(Buffer);
+        InvalidCodePath; 
+    }
+    
+    glAttachShader(ShaderProgram, VertexShaderObj);
+    glAttachShader(ShaderProgram, FragShaderObj);
+    
+    glLinkProgram(ShaderProgram);
+    
+    glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &success);
+    if (success == 0) {
+        char Buffer[1024];
+        GLchar ErrorLog[1024];
+        glGetProgramInfoLog(ShaderProgram, sizeof(ErrorLog), NULL, ErrorLog);
+        stbsp_sprintf(Buffer, "Error linking shader program: '%s'\n", ErrorLog);
+        OutputDebugStringA(Buffer);
+        InvalidCodePath; 
+    }
+    
+    return ShaderProgram; 
+}
