@@ -7,7 +7,12 @@ struct network_data
     int Sport;
     int Rport;
     
+#if IOCP
+    ULONG_PTR CK;
+    HANDLE Master = 0;
+#else
     fd_set Master;
+#endif 
     
     sockaddr_in Client;
     int ClientLength;
@@ -61,11 +66,23 @@ int Setup(network_data *Data, int Sport, int Rport, ui_data *UIData = 0)
         return 1;
     }
     
+#if IOCP
+    Data->Master = CreateIoCompletionPort (INVALID_HANDLE_VALUE,
+                                           NULL,0,3); 
+    if (!Data->Master) 
+    { 
+        UIData->Console.AddLog("g_hCompletionPort Create Failed\n"); 
+        return FALSE; 
+    } 
+    //Associate this socket to this I/O completion port 
+    CreateIoCompletionPort((HANDLE)Data->in ,Data->Master,
+                           (DWORD)Data->in,3);  
     
     
+#else
     FD_ZERO(&Data->Master);
     FD_SET(Data->in, &Data->Master);
-    
+#endif
     ZeroMemory(&Data->Client, sizeof(Data->Client));
     Data->ClientLength = sizeof(Data->Client);
     
@@ -93,29 +110,47 @@ int Send(char* Sbuff, network_data *Data, ui_data *UIData = 0)
 
 int Recieve(char* out, network_data *Data)
 {
-    
+    int bytesIn = 0;
+#if IOCP
+    LPDWORD Transferred = 0;
+    PULONG_PTR CompletionKey = 0;  
+    LPOVERLAPPED Overlapped;
+    bool Result = GetQueuedCompletionStatus(Data->Master, Transferred, CompletionKey, &Overlapped, 0);
+#else
     fd_set Copy = Data->Master; 
+#endif
     
     timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
     
     // NOTE(Barret5Ocal): You always need to set the timeout variable. That's what tells select to not just sit in a loop
+#if IOCP
+    
+#else
     int SocketCount = select(Data->in+1, &Copy, nullptr, nullptr, &timeout);
     
-    int bytesIn = 0;
     for(int i = 0; i < SocketCount; i++)
     {
+#endif
+        
+#if IOCP
+        if(Result)
+#else
         SOCKET sock = Copy.fd_array[i];
-        
-        
         if(sock)
+#endif
+        
+        
         {
             ZeroMemory(out, 1024);
             
             bytesIn = recvfrom(Data->in, out, 1024, 0, (sockaddr*)&Data->Client, &Data->ClientLength);
         }
+#if IOCP
+#else 
+        
     }
-    
+#endif
     return bytesIn;
 }

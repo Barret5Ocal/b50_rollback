@@ -58,11 +58,7 @@ typedef double r64;
 #define InvalidCodePath Assert(false)
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
-#define Kilobyte(Value) 1024 * Value
-#define Megabyte(Value) 1024 * Kilobyte(Value)
-#define Gigabyte(Value) 1024 * Megabyte(Value)
-#define Terabyte(Value) 1024 * Gigabyte(Value)
-
+#include "b50_memory.h"
 
 #define ScreenWidth 1280
 #define ScreenHeight 720
@@ -73,7 +69,7 @@ typedef double r64;
 #define STBRP_LARGE_RECTS
 #include "stb_rect_pack.h"
 
-
+#include "b50_input.h"
 
 #if IMGUI
 #include "imgui.cpp"
@@ -90,10 +86,17 @@ typedef double r64;
 
 #endif
 
+#include "render_buffer.h"
+
 #include "network.cpp"
 
-
 #include "b50_timing.h"
+
+#include "game.cpp"
+
+#include "render.cpp"
+
+#include "render_buffer.cpp"
 
 struct read_results
 {
@@ -207,15 +210,36 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         
         Win32InitOpenGL(Window);
         
+        char *VertexShaderSource = "#version 330 core\n"
+            "layout (location = 0) in vec3 aPos;\n"
+            "uniform mat4 transform;\n"
+            "void main()\n"
+            "{\n"
+            "   gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+            "}\0";
+        
+        int VertexShaderSourceLength = strlen(VertexShaderSource);
+        char *FragmentShaderSource = "#version 330 core\n"
+            "out vec4 FragColor;\n"
+            "uniform vec4 ourColor;\n"
+            "void main()\n"
+            "{\n"
+            "   FragColor = ourColor;\n"
+            "}\n\0";
+        int FragmentShaderSourceLength = strlen(FragmentShaderSource); 
+        
+        GLuint ShaderProgram = CreateShaderProgram(VertexShaderSource, VertexShaderSourceLength, FragmentShaderSource, FragmentShaderSourceLength);
+        
+        
+        
+        // TODO(Barret5Ocal): should left and top be negative or 0
+        
+        
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
         imguisetup();
         
         network_data Data = {};
-        
-        
-        
-        
         
         ui_data UIData = {};
         //char *port = (char *)malloc(sizeof(char) * 4);
@@ -230,10 +254,23 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         UIData.Rport = RemotePort;
         UIData.Message = Message; 
         
-        int Sindex = 0;
-        char Sbuff[255] = {};
+        //int Sindex = 0;
+        //char Sbuff[255] = {};
         
         char Rbuff[1024];
+        
+        b50_memory_space MainSpace = {};
+        B50InitMemorySpace(&MainSpace, Megabyte(500));
+        
+        render_buffer *RenderBuffer = (render_buffer *)B50AllocateMemory(&MainSpace, sizeof(render_buffer));
+        RenderBuffer->Entries = (render_entry *)B50AllocateMemory(&MainSpace, sizeof(render_entry) * 100);
+        
+        //LPOVERLAPPED *Overlapped = (LPOVERLAPPED *)malloc(sizeof(LPOVERLAPPED));
+        b50_input_buffer Input1 = {};
+        b50_input_buffer Input2 = {};
+        
+        v3 Position = {0, 0, 0};
+        
         
         time_info TimeInfo = {};
         while(RunLoop(&TimeInfo, 60))
@@ -245,6 +282,24 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 DispatchMessage(&Message);
             }
             
+            
+            Capture(&Input1, 0);
+            //Capture(InputBuffer2, &Index2, 0);
+            
+#if 0 // for testing 
+            if(IsButtonDown(&Input1, A))
+                UIData.Console.AddLog("Down");
+            if(IsButton(&Input1, A))
+                UIData.Console.AddLog("Stay");
+            if(IsButtonUp(&Input1, A))
+                UIData.Console.AddLog("Up");
+#endif 
+            
+            // TODO(Barret5Ocal): start designing the game 
+            RunGame(&Input1, &Input2);
+            
+            
+            
             PBYTE Keyboard[256] = {};
             if(GetKeyboardState(Keyboard[0]))
                 InvalidCodePath;
@@ -254,7 +309,6 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 i < 256;
                 i++)
                 io.KeysDown[i] = Keyboard[i];
-            
             
             
             if(UIData.SetupPressed)
@@ -282,87 +336,67 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 UIData.Console.AddLog(PrintOut);
             }
             
-            //int yes = Recieve(NData.ReceiveSocket, PrintOut);
-            if(int bytesIn = Recieve(Rbuff, &Data))
+#if IOCP
+            if(Data.Master)
             {
-                if(bytesIn == SOCKET_ERROR)
+#else
+#endif
+                if(int bytesIn = Recieve(Rbuff, &Data))
                 {
-                    UIData.Console.AddLog("Error receiving from client %d\n", WSAGetLastError());
-                    //printf("Error receiving from client %d\n", WSAGetLastError());
-                    continue;
+                    if(bytesIn == SOCKET_ERROR)
+                    {
+                        UIData.Console.AddLog("Error receiving from client %d\n", WSAGetLastError());
+                        //printf("Error receiving from client %d\n", WSAGetLastError());
+                        continue;
+                    }
+                    
+                    char clientIP[256];
+                    ZeroMemory(clientIP, 256);
+                    
+                    inet_ntop(AF_INET, &Data.Client.sin_addr, clientIP, 256);
+                    
+                    UIData.Console.AddLog("Message recv from %s : %s\n", clientIP, Rbuff);
+                    //printf("Message recv from %s : %s\n", clientIP, Rbuff);
                 }
-                
-                char clientIP[256];
-                ZeroMemory(clientIP, 256);
-                
-                inet_ntop(AF_INET, &Data.Client.sin_addr, clientIP, 256);
-                
-                UIData.Console.AddLog("Message recv from %s : %s\n", clientIP, Rbuff);
-                //printf("Message recv from %s : %s\n", clientIP, Rbuff);
+#if IOCP
             }
+#else 
+#endif
             
+            // NOTE(Barret5Ocal): 
+            if(IsButton(&Input1, DPAD_UP))
+                Position.y -= 0.1f;
+            if(IsButton(&Input1, DPAD_DOWN))
+                Position.y += 0.1f;
+            if(IsButton(&Input1, DPAD_LEFT))
+                Position.x -= 0.1f;
+            if(IsButton(&Input1, DPAD_RIGHT))
+                Position.x += 0.1f;
             
-            // TODO(Barret5Ocal): might need to switch back to windows to get inputs without the need to stop the program
+            if(IsButtonUp(&Input1, DPAD_RIGHT | DPAD_LEFT | DPAD_DOWN | DPAD_UP))
+                UIData.Console.AddLog("Position is x: %f, y: %f", Position.x, Position.y);
+            
             Dim = Win32GetWindowDim(Window);
             
-            glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
+            ClearRenderEntry(RenderBuffer, {0.1f, 0.1f, 0.3f, 1.0f});
             
+            CardRenderEntry(RenderBuffer, Position, gb_quat_identity(), {1, 1, 1}, {0.0f, 1.0f, 0.0f, 1.0f});
+            
+            
+            RunRenderBuffer(RenderBuffer, ShaderProgram);
             
             imguistuff(Dim, &UIData, LeftMouse);
             
-            
-            
             imguirender();
             
-            HDC WindowDC = GetDC(Window);
+            EndFrame(Window, Dim.Width, Dim.Height);
             
-            glViewport(0, 0, ScreenWidth, ScreenHeight);
-            SwapBuffers(WindowDC);
-            
-            ReleaseDC(Window, WindowDC);
-            
-            
-#if 0
-            char s = 0;
-            if ( _kbhit() )
-            {
-                s = _getch();
-                _putch(s);
-                Sbuff[Sindex++] = s; 
-            }
-            
-            if(s == '\r')
-            {
-                _putch('\n');
-                Sbuff[Sindex] = '\0';
-                Sindex = 0;
-                
-                Send(Sindex, Sbuff, &Data);
-            }
-            
-            if(int bytesIn = Recieve(Rbuff, &Data))
-            {
-                if(bytesIn == SOCKET_ERROR)
-                {
-                    printf("Error receiving from client %d\n", WSAGetLastError());
-                    continue;
-                }
-                
-                char clientIP[256];
-                ZeroMemory(clientIP, 256);
-                
-                inet_ntop(AF_INET, &Data.Client.sin_addr, clientIP, 256);
-                
-                printf("Message recv from %s : %s\n", clientIP, Rbuff);
-            }
-#endif 
         }
         
+        glDeleteProgram(ShaderProgram);
         
         closesocket(Data.out);
         closesocket(Data.in);
-        
     }
     
     WSACleanup();
