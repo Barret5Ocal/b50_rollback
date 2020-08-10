@@ -344,7 +344,7 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 
                 if (ImGui::Button("Get Socket"))
                 {
-                    NetworkSetup(&Data, atoi(port), atoi(RemotePort));
+                    NetworkSetup(&Data, "192.168.1.8", atoi(port), atoi(RemotePort));
                     
                 }
                 

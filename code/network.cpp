@@ -76,7 +76,7 @@ void GetAddress(network_data *Data)
     }
 }
 
-int NetworkSetup(network_data *Data, int Sport, int Rport)
+int NetworkSetup(network_data *Data, char * ip, int Sport, int Rport)
 {
     
     Data->Sport = Sport;
@@ -94,7 +94,7 @@ int NetworkSetup(network_data *Data, int Sport, int Rport)
     Data->Server.sin_family = AF_INET;
     Data->Server.sin_port = htons(Data->Sport);
     
-    inet_pton(AF_INET, "127.0.0.1", &Data->Server.sin_addr);
+    inet_pton(AF_INET, ip, &Data->Server.sin_addr);
     
     Data->out = socket(AF_INET, SOCK_DGRAM, 0);
     
