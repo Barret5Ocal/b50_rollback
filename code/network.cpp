@@ -18,12 +18,8 @@ struct network_data
     int ClientLength;
 };
 
-int NetworkSetup(network_data *Data, int Sport, int Rport)
+int StartUpNetwork()
 {
-    
-    Data->Sport = Sport;
-    Data->Rport = Rport;
-    
     
     WSADATA SData; 
     WORD Version = MAKEWORD(2, 2);
@@ -35,6 +31,57 @@ int NetworkSetup(network_data *Data, int Sport, int Rport)
         //printf("Can't start Winsock! %d\n", Wsok);
         return 1;
     }
+    return 0;
+    
+}
+void GetAddress(network_data *Data)
+{
+    
+    int status;
+    struct addrinfo hints;
+    struct addrinfo *servinfo;  // will point to the results
+    
+    memset(&hints, 0, sizeof hints); // make sure the struct is empty
+    hints.ai_family = AF_UNSPEC;     // don't care IPv4 or IPv6
+    hints.ai_socktype = SOCK_DGRAM; // TCP stream sockets
+    //hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+    
+    if ((status = getaddrinfo(NULL, "3490", &hints, &servinfo)) != 0) {
+        Console.AddLog("getaddrinfo error: %s\n", gai_strerror(status));
+        //InvalidCodePath;
+    }
+    
+    struct addrinfo *p;
+    char ipstr[INET6_ADDRSTRLEN];
+    
+    for(p = servinfo;p != NULL; p = p->ai_next) {
+        void *addr;
+        char *ipver;
+        
+        // get the pointer to the address itself,
+        // different fields in IPv4 and IPv6:
+        if (p->ai_family == AF_INET) { // IPv4
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+            addr = &(ipv4->sin_addr);
+            ipver = "IPv4";
+        } else { // IPv6
+            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
+            addr = &(ipv6->sin6_addr);
+            ipver = "IPv6";
+        }
+        
+        // convert the IP to a string and print it:
+        inet_ntop(p->ai_family, addr, ipstr, sizeof ipstr);
+        Console.AddLog("  %s: %s\n", ipver, ipstr);
+    }
+}
+
+int NetworkSetup(network_data *Data, int Sport, int Rport)
+{
+    
+    Data->Sport = Sport;
+    Data->Rport = Rport;
+    
     
     if(!Data->Sport && !Data->Rport)
     {
@@ -85,7 +132,6 @@ int NetworkSetup(network_data *Data, int Sport, int Rport)
 #endif
     ZeroMemory(&Data->Client, sizeof(Data->Client));
     Data->ClientLength = sizeof(Data->Client);
-    
     
     return 0;
 }

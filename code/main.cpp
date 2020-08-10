@@ -335,16 +335,21 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
             
             local_persist bool Setup = true;
             {
-                ImGui::Begin("Socket", &Setup,  ImGuiWindowFlags_None);
+                if(ImGui::Begin("Socket", &Setup,  ImGuiWindowFlags_None))
+                    StartUpNetwork();
+                
+                ImGui::Button("StartUp");
                 ImGui::InputText("Sport", port, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
                 ImGui::InputText("Rport", RemotePort, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
                 
                 if (ImGui::Button("Get Socket"))
                 {
-                    
                     NetworkSetup(&Data, atoi(port), atoi(RemotePort));
                     
                 }
+                
+                if(ImGui::Button("Get Address"))
+                    GetAddress(&Data);
                 ImGui::End();
             }
             
