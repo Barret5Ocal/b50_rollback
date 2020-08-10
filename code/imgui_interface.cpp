@@ -109,26 +109,7 @@ struct ui_console
     
 };
 
-struct ui_data
-{
-    
-    bool ConsoleOpen;
-    ui_console Console;
-    
-    
-    bool SetupWindow = true;
-    int SetupPressed = false;
-    
-    bool SendWindow = true;
-    int SendPressed = false;
-    
-    char *Sport;
-    char *Rport;
-    
-    char *Message;
-};
-
-
+global_variable ui_console Console;
 
 
 
@@ -151,64 +132,33 @@ void imguisetup()
     ImGui_ImplOpenGL3_Init(0);
     ImGui::StyleColorsDark();
     bool show_demo_window = true;
+    
+    io.KeyMap[ImGuiKey_Tab] = VK_TAB;
+    io.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = VK_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = VK_DOWN;
+    io.KeyMap[ImGuiKey_PageUp] = VK_PRIOR;
+    io.KeyMap[ImGuiKey_PageDown] = VK_NEXT;
+    io.KeyMap[ImGuiKey_Home] = VK_HOME;
+    io.KeyMap[ImGuiKey_End] = VK_END;
+    io.KeyMap[ImGuiKey_Insert] = VK_INSERT;
+    io.KeyMap[ImGuiKey_Delete] = VK_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = VK_BACK;
+    io.KeyMap[ImGuiKey_Space] = VK_SPACE;
+    io.KeyMap[ImGuiKey_Enter] = VK_RETURN;
+    io.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
+    //io.KeyMap[ImGuiKey_KeyPadEnter] = VK_RETURN;
+    //io.KeyMap[ImGuiKey_A] = 'A';
+    //io.KeyMap[ImGuiKey_C] = 'C';
+    //io.KeyMap[ImGuiKey_V] = 'V';
+    //io.KeyMap[ImGuiKey_X] = 'X';
+    //io.KeyMap[ImGuiKey_Y] = 'Y';
+    //io.KeyMap[ImGuiKey_Z] = 'Z';
 #endif 
     
 }
 
-void imguistuff(win32_windowdim Dim, ui_data *Data, int LeftMouse)
-{
-#if IMGUI
-    POINT Point = {}; 
-    GetCursorPos(&Point);
-    ImGuiIO& io = ImGui::GetIO();
-    
-    io.MousePos = {(float)Point.x - Dim.x - 5, (float)Point.y - Dim.y + 5};
-    
-    //io.MouseDown[0] = 0;
-    io.MouseDown[0] = LeftMouse;
-    
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui::NewFrame();
-    
-    //ImGui::PushAllowKeyboardFocus(true);
-    io.WantCaptureKeyboard = true;
-    io.WantTextInput = true;
-    
-    
-    
-    if(Data->SetupWindow)
-    {
-        ImGui::Begin("Socket", &Data->SetupWindow,  ImGuiWindowFlags_None);
-        ImGui::InputText("Sport", Data->Sport, sizeof(char) * 5);
-        ImGui::InputText("Rport", Data->Rport, sizeof(char) * 5);
-        
-        if (ImGui::Button("Get Socket"))
-        {
-            Data->SetupPressed = true;
-            
-        }
-        ImGui::End();
-    }
-    
-    if(Data->SendWindow)
-    {
-        ImGui::Begin("Send Box", &Data->SendWindow, ImGuiWindowFlags_None);
-        ImGui::InputText("message input##text3", Data->Message, sizeof(char) * 50);
-        
-        if (ImGui::Button("Send Message"))
-        {
-            Data->SendPressed = true;
-        }
-        
-        ImGui::End();
-    }
-    
-    Data->Console.Draw("Console", &Data->ConsoleOpen);
-    
-    ImGui::Render();
-#endif 
-    
-}
 
 
 void imguirender()

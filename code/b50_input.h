@@ -13,9 +13,12 @@ struct b50_input_buffer
 {
     short InputBuffer[BUFFER_MAX];
     int Index = 0;
+    
+    // NOTE(Barret5Ocal): set this to make IsButton functions get inputs from a few frame back 
+    int InputLag = 0;
 };
 
-void Capture(b50_input_buffer *Buffer, int Player)
+void CaptureXboxController(b50_input_buffer *Buffer, int Player)
 {
     
     XINPUT_STATE state;
@@ -33,6 +36,7 @@ void Capture(b50_input_buffer *Buffer, int Player)
         
         if(Buffer->Index > BUFFER_MAX - 1)
             Buffer->Index = 0;
+        
     }
     else
     {
@@ -63,14 +67,81 @@ enum BUTTONS
     Y = 0x8000
 };
 
+void CaptureKeyboard(b50_input_buffer *Buffer)
+{
+    
+    short Final = 0;
+    
+    if(GetKeyState(0x57) >> 15)
+        Final |= DPAD_UP;
+    
+    if(GetKeyState(0x53) >> 15)
+        Final |= DPAD_DOWN;
+    
+    if(GetKeyState(0x41) >> 15)
+        Final |= DPAD_LEFT;
+    
+    if(GetKeyState(0x44) >> 15)
+        Final |= DPAD_RIGHT;
+    
+    if(GetKeyState(VK_RETURN) >> 15)
+        Final |= START;
+    
+    if(GetKeyState(VK_BACK) >> 15)
+        Final |= BACK;
+    
+    if(GetKeyState(VK_TAB) >> 15)
+        Final |= LEFT_THUMB;
+    
+    if(GetKeyState(VK_CLEAR) >> 15)
+        Final |= RIGHT_THUMB;
+    
+    if(GetKeyState(0x56) >> 15)
+        Final |= LEFT_SHOULDER;
+    
+    if(GetKeyState(0x42) >> 15)
+        Final |= RIGHT_SHOULDER;
+    
+    if(GetKeyState(0x4E) >> 15)
+        Final |= LEFT_TRIGGER;
+    
+    if(GetKeyState(0x4D) >> 15)
+        Final |= RIGHT_TRIGGER;
+    
+    if(GetKeyState(0x55) >> 15)
+        Final |= A;
+    
+    if(GetKeyState(0x49) >> 15)
+        Final |= B;
+    
+    if(GetKeyState(0x4F) >> 15)
+        Final |= X;
+    
+    if(GetKeyState(0x50) >> 15)
+        Final |= Y;
+    
+    
+    Buffer->InputBuffer[Buffer->Index] = 0;
+    Buffer->InputBuffer[Buffer->Index++] = Final;
+    
+    if(Buffer->Index > BUFFER_MAX - 1)
+        Buffer->Index = 0;
+    
+}
 
 int IsButtonDown(b50_input_buffer *Input, short Button)
 {
-    int decrement_address_one = (Input->Index + BUFFER_MAX - 1) % BUFFER_MAX;
-    int decrement_address_two = (Input->Index + BUFFER_MAX - 2) % BUFFER_MAX;
+    if(!Input)
+        return 0;
+    
+    int IndexWithLag = ((Input->Index - Input->InputLag) + BUFFER_MAX - 1) % BUFFER_MAX;
+    
+    int decrement_address_one = (IndexWithLag + BUFFER_MAX - 1) % BUFFER_MAX;
+    int decrement_address_two = (IndexWithLag + BUFFER_MAX - 2) % BUFFER_MAX;
     
     short Current = Input->InputBuffer[decrement_address_one] & Button;
     short Previous = Input->InputBuffer[decrement_address_two] & Button;
+    
     
     return (Current && !Previous);
 }
@@ -78,8 +149,16 @@ int IsButtonDown(b50_input_buffer *Input, short Button)
 
 int IsButton(b50_input_buffer *Input, short Button)
 {
-    int decrement_address_one = (Input->Index + BUFFER_MAX - 1) % BUFFER_MAX;
-    int decrement_address_two = (Input->Index + BUFFER_MAX - 2) % BUFFER_MAX;
+    if(!Input)
+        return 0;
+    
+    int IndexWithLag = ((Input->Index - Input->InputLag) + BUFFER_MAX - 1) % BUFFER_MAX;
+    
+    if(IndexWithLag < 0)
+        InvalidCodePath; 
+    
+    int decrement_address_one = (IndexWithLag + BUFFER_MAX - 1) % BUFFER_MAX;
+    int decrement_address_two = (IndexWithLag + BUFFER_MAX - 2) % BUFFER_MAX;
     
     short Current = Input->InputBuffer[decrement_address_one] & Button;
     short Previous = Input->InputBuffer[decrement_address_two] & Button;
@@ -90,8 +169,13 @@ int IsButton(b50_input_buffer *Input, short Button)
 
 int IsButtonUp(b50_input_buffer *Input, short Button)
 {
-    int decrement_address_one = (Input->Index + BUFFER_MAX - 1) % BUFFER_MAX;
-    int decrement_address_two = (Input->Index + BUFFER_MAX - 2) % BUFFER_MAX;
+    if(!Input)
+        return 0;
+    
+    int IndexWithLag = ((Input->Index - Input->InputLag) + BUFFER_MAX - 1) % BUFFER_MAX;
+    
+    int decrement_address_one = (IndexWithLag + BUFFER_MAX - 1) % BUFFER_MAX;
+    int decrement_address_two = (IndexWithLag + BUFFER_MAX - 2) % BUFFER_MAX;
     
     short Current = Input->InputBuffer[decrement_address_one] & Button;
     short Previous = Input->InputBuffer[decrement_address_two] & Button;

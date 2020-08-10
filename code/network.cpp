@@ -18,7 +18,7 @@ struct network_data
     int ClientLength;
 };
 
-int Setup(network_data *Data, int Sport, int Rport, ui_data *UIData = 0)
+int NetworkSetup(network_data *Data, int Sport, int Rport)
 {
     
     Data->Sport = Sport;
@@ -31,14 +31,14 @@ int Setup(network_data *Data, int Sport, int Rport, ui_data *UIData = 0)
     
     if(Wsok != 0)
     {
-        UIData->Console.AddLog("Can't start Winsock! %d\n", Wsok);
+        Console.AddLog("Can't start Winsock! %d\n", Wsok);
         //printf("Can't start Winsock! %d\n", Wsok);
         return 1;
     }
     
     if(!Data->Sport && !Data->Rport)
     {
-        UIData->Console.AddLog("No port\n");
+        Console.AddLog("No port\n");
         //printf("No port\n");
         return 1;
     }
@@ -61,7 +61,7 @@ int Setup(network_data *Data, int Sport, int Rport, ui_data *UIData = 0)
     
     if(bind(Data->in, (sockaddr*)&ServerHint, sizeof(ServerHint)) == SOCKET_ERROR)
     {
-        UIData->Console.AddLog("Can't bind socket! %d\n", WSAGetLastError());
+        Console.AddLog("Can't bind socket! %d\n", WSAGetLastError());
         //printf("Can't bind socket! %d\n", WSAGetLastError());
         return 1;
     }
@@ -71,7 +71,7 @@ int Setup(network_data *Data, int Sport, int Rport, ui_data *UIData = 0)
                                            NULL,0,3); 
     if (!Data->Master) 
     { 
-        UIData->Console.AddLog("g_hCompletionPort Create Failed\n"); 
+        Console.AddLog("g_hCompletionPort Create Failed\n"); 
         return FALSE; 
     } 
     //Associate this socket to this I/O completion port 
@@ -90,7 +90,7 @@ int Setup(network_data *Data, int Sport, int Rport, ui_data *UIData = 0)
     return 0;
 }
 
-int Send(char* Sbuff, network_data *Data, ui_data *UIData = 0)
+int Send(char* Sbuff, network_data *Data)
 {
     
     int sendOk = 0;
@@ -99,7 +99,7 @@ int Send(char* Sbuff, network_data *Data, ui_data *UIData = 0)
     
     if(sendOk == SOCKET_ERROR)
     {
-        UIData->Console.AddLog("That didn't work! %d\n", WSAGetLastError());
+        Console.AddLog("That didn't work! %d\n", WSAGetLastError());
         
         //printf("That didn't work! %d\n", WSAGetLastError());
     }

@@ -1,4 +1,4 @@
-void LoadCardVAO(GLuint *OutVBO, GLuint *OutVAO, GLuint *OutEBO)
+void LoadCardVAO(GLuint *OutVBO, GLuint *OutVAO, GLuint *OutEBO, v3 Scale)
 {
     
     float vertices[] = {
@@ -55,19 +55,20 @@ void UnLoadCardVAO(GLuint VBO, GLuint VAO, GLuint EBO)
 void RenderCard(render_entry *Entry, GLuint  ShaderProgram)
 {
     unsigned int VBO, VAO, EBO;
-    LoadCardVAO(&VBO, &VAO, &EBO);
+    LoadCardVAO(&VBO, &VAO, &EBO, Entry->Scale);
     
     gbMat4 Ortho; 
     gb_mat4_ortho2d(&Ortho, -ScreenWidth, ScreenWidth, ScreenHeight, -ScreenHeight);
     
     gbMat4 Scale; 
-    gb_mat4_scale(&Scale, {100, 100, 100});
+    gb_mat4_scale(&Scale, {10 * Entry->Scale.x, 10 * Entry->Scale.y, 10});
     
     
     gbMat4 Translate = {}; 
     gb_mat4_translate(&Translate, {Entry->Position.x, Entry->Position.y, 0});
     
-    gbMat4 Transform = Ortho * Scale * Translate;
+    // NOTE(Barret5Ocal): you need to order the multiplies correctly. matices are not "commutative"
+    gbMat4 Transform = Ortho * Translate * Scale;
     
     glUseProgram(ShaderProgram);
     glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do 

@@ -50,6 +50,8 @@ typedef uint64_t u64;
 typedef float r32;
 typedef double r64;
 
+typedef gbRect2 rect2;
+
 #define global_variable static 
 #define local_persist static 
 #define internal static 
@@ -155,14 +157,29 @@ MainWindowProc(HWND Window,
         {
             b50_Running = 0;
         }break;
+        
         case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
         {
-#if 1
-            unsigned short c = MapVirtualKeyW(WParam, MAPVK_VK_TO_CHAR);
             ImGuiIO& io = ImGui::GetIO();
-            io.AddInputCharacter(c);
-#endif
+            if (WParam < 256)
+                io.KeysDown[WParam] = 1;
             
+        }break;
+        
+        case WM_KEYUP:
+        case WM_SYSKEYUP:
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            if (WParam < 256)
+                io.KeysDown[WParam] = 0;
+        }break;
+        
+        case WM_CHAR:
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            if (WParam > 0 && WParam < 0x10000)
+                io.AddInputCharacter((unsigned short)WParam);
         }break;
         
         case WM_LBUTTONDOWN: 
@@ -241,18 +258,11 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         
         network_data Data = {};
         
-        ui_data UIData = {};
-        //char *port = (char *)malloc(sizeof(char) * 4);
-        //char *RemotePort = (char *)malloc(sizeof(char) * 4);
         
         char port[5] = {};
         char RemotePort[5] = {};
-        char Message[51] = {}; 
+        char NetworkMessage[51] = {}; 
         
-        
-        UIData.Sport = port;
-        UIData.Rport = RemotePort;
-        UIData.Message = Message; 
         
         //int Sindex = 0;
         //char Sbuff[255] = {};
@@ -269,7 +279,12 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         b50_input_buffer Input1 = {};
         b50_input_buffer Input2 = {};
         
+        
         v3 Position = {0, 0, 0};
+        
+        gamestate *GameState = (gamestate *)B50AllocateMemory(&MainSpace, sizeof(gamestate));
+        
+        StartUp(GameState);
         
         
         time_info TimeInfo = {};
@@ -283,57 +298,75 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
             }
             
             
-            Capture(&Input1, 0);
-            //Capture(InputBuffer2, &Index2, 0);
-            
-#if 0 // for testing 
-            if(IsButtonDown(&Input1, A))
-                UIData.Console.AddLog("Down");
-            if(IsButton(&Input1, A))
-                UIData.Console.AddLog("Stay");
-            if(IsButtonUp(&Input1, A))
-                UIData.Console.AddLog("Up");
-#endif 
-            
-            // TODO(Barret5Ocal): start designing the game 
-            RunGame(&Input1, &Input2);
-            
-            
-            
-            PBYTE Keyboard[256] = {};
-            if(GetKeyboardState(Keyboard[0]))
-                InvalidCodePath;
+            CaptureXboxController(&Input1, 0);
+            CaptureKeyboard(&Input2);
             
             ImGuiIO& io = ImGui::GetIO();
+            
+#if 0
             for(int i = 0;
                 i < 256;
                 i++)
                 io.KeysDown[i] = Keyboard[i];
+#endif
+            
+            POINT Point = {}; 
+            GetCursorPos(&Point);
+            
+            io.MousePos = {(float)Point.x - Dim.x - 5, (float)Point.y - Dim.y + 5};
+            
+            //io.MouseDown[0] = 0;
+            io.MouseDown[0] = LeftMouse;
+            
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui::NewFrame();
+            
+            //ImGui::PushAllowKeyboardFocus(true);
+            io.WantCaptureKeyboard = true;
+            io.WantTextInput = true;
             
             
-            if(UIData.SetupPressed)
+            
+            ClearRenderEntry(RenderBuffer, {0.1f, 0.1f, 0.3f, 1.0f});
+            
+            RunGame(GameState, RenderBuffer, &Input1, &Input2);
+            
+            
+            
+            local_persist bool Setup = true;
             {
-                UIData.SetupPressed = false;
+                ImGui::Begin("Socket", &Setup,  ImGuiWindowFlags_None);
+                ImGui::InputText("Sport", port, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
+                ImGui::InputText("Rport", RemotePort, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
                 
-                Setup(&Data, atoi(UIData.Sport), atoi(UIData.Rport), &UIData);
-                
-                
-                //NData.SendSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
-                //NData.ReceiveSocket = CreateSocket(atoi(UIData.port), &UIData.Console);
-                //CreateSocket(&NData.Socket, NData.port, &UIData.Console);
+                if (ImGui::Button("Get Socket"))
+                {
+                    
+                    NetworkSetup(&Data, atoi(port), atoi(RemotePort));
+                    
+                }
+                ImGui::End();
             }
             
             
-            if(UIData.SendPressed)
+            local_persist bool SendWindow = true;
             {
-                UIData.SendPressed = false;
+                ImGui::Begin("Send Box", &SendWindow, ImGuiWindowFlags_None);
+                ImGui::InputText("message input##text3", NetworkMessage, sizeof(char) * 50);
                 
-                Send(UIData.Message, &Data, &UIData);
-                //SendMessage(UIData.Message, NData.SendSocket, &NData.Remote);
+                if (ImGui::Button("Send Message"))
+                {
+                    
+                    Send(NetworkMessage, &Data);
+                    //SendMessage(UIData.Message, NData.SendSocket, &NData.Remote);
+                    
+                    char PrintOut[100] = {};
+                    sprintf(PrintOut, "Sending Message: %s\n", NetworkMessage);
+                    Console.AddLog(PrintOut);
+                    
+                }
                 
-                char PrintOut[100] = {};
-                sprintf(PrintOut, "Sending Message: %s\n", UIData.Message);
-                UIData.Console.AddLog(PrintOut);
+                ImGui::End();
             }
             
 #if IOCP
@@ -345,7 +378,7 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 {
                     if(bytesIn == SOCKET_ERROR)
                     {
-                        UIData.Console.AddLog("Error receiving from client %d\n", WSAGetLastError());
+                        Console.AddLog("Error receiving from client %d\n", WSAGetLastError());
                         //printf("Error receiving from client %d\n", WSAGetLastError());
                         continue;
                     }
@@ -355,37 +388,25 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                     
                     inet_ntop(AF_INET, &Data.Client.sin_addr, clientIP, 256);
                     
-                    UIData.Console.AddLog("Message recv from %s : %s\n", clientIP, Rbuff);
+                    Console.AddLog("Message recv from %s : %s\n", clientIP, Rbuff);
                     //printf("Message recv from %s : %s\n", clientIP, Rbuff);
+                    
                 }
 #if IOCP
             }
 #else 
 #endif
             
-            // NOTE(Barret5Ocal): 
-            if(IsButton(&Input1, DPAD_UP))
-                Position.y -= 0.1f;
-            if(IsButton(&Input1, DPAD_DOWN))
-                Position.y += 0.1f;
-            if(IsButton(&Input1, DPAD_LEFT))
-                Position.x -= 0.1f;
-            if(IsButton(&Input1, DPAD_RIGHT))
-                Position.x += 0.1f;
-            
-            if(IsButtonUp(&Input1, DPAD_RIGHT | DPAD_LEFT | DPAD_DOWN | DPAD_UP))
-                UIData.Console.AddLog("Position is x: %f, y: %f", Position.x, Position.y);
-            
             Dim = Win32GetWindowDim(Window);
             
-            ClearRenderEntry(RenderBuffer, {0.1f, 0.1f, 0.3f, 1.0f});
             
-            CardRenderEntry(RenderBuffer, Position, gb_quat_identity(), {1, 1, 1}, {0.0f, 1.0f, 0.0f, 1.0f});
-            
-            
+            // NOTE(Barret5Ocal): The stutter in the animation came from the display settings on my computer being set to 59hz the problem was fixed when I set the display setting to 154hz
             RunRenderBuffer(RenderBuffer, ShaderProgram);
             
-            imguistuff(Dim, &UIData, LeftMouse);
+            local_persist bool ConsoleOpen = true;
+            Console.Draw("Console", &ConsoleOpen);
+            
+            ImGui::Render();
             
             imguirender();
             
