@@ -262,7 +262,7 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         char port[5] = {};
         char RemotePort[5] = {};
         char NetworkMessage[51] = {}; 
-        
+        char IP[12] = "127.0.0.1";
         
         //int Sindex = 0;
         //char Sbuff[255] = {};
@@ -341,10 +341,11 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 ImGui::Button("StartUp");
                 ImGui::InputText("Sport", port, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
                 ImGui::InputText("Rport", RemotePort, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
+                ImGui::InputText("IP", IP, ArrayCount(IP), ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
                 
                 if (ImGui::Button("Get Socket"))
                 {
-                    NetworkSetup(&Data, "192.168.1.8", atoi(port), atoi(RemotePort));
+                    NetworkSetup(&Data, IP, atoi(port), atoi(RemotePort));
                     
                 }
                 
