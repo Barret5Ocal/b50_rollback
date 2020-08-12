@@ -261,7 +261,7 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         char port[5] = {};
         char RemotePort[5] = {};
         char NetworkMessage[51] = {}; 
-        char IP[12] = "127.0.0.1";
+        char IP[15] = "68.98.76.230";
         
         //int Sindex = 0;
         //char Sbuff[255] = {};
