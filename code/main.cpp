@@ -251,7 +251,6 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         
         // TODO(Barret5Ocal): should left and top be negative or 0
         
-        
         win32_windowdim Dim = Win32GetWindowDim(Window);
         
         imguisetup();
@@ -297,6 +296,8 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 DispatchMessage(&Message);
             }
             
+            
+            Dim = Win32GetWindowDim(Window);
             
             CaptureXboxController(&Input1, 0);
             CaptureKeyboard(&Input2);
@@ -402,8 +403,6 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
             }
 #else 
 #endif
-            
-            Dim = Win32GetWindowDim(Window);
             
             
             // NOTE(Barret5Ocal): The stutter in the animation came from the display settings on my computer being set to 59hz the problem was fixed when I set the display setting to 154hz
