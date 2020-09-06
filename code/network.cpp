@@ -34,6 +34,8 @@ int StartUpNetwork()
     return 0;
     
 }
+
+
 void GetAddress(network_data *Data)
 {
     
@@ -100,18 +102,29 @@ int NetworkSetup(network_data *Data, char * ip, int Sport, int Rport)
     
     Data->in = socket(AF_INET, SOCK_DGRAM, 0);
     
+    
     sockaddr_in ServerHint; 
+    //inet_pton(AF_INET, ip, &ServerHint.sin_addr);
     ServerHint.sin_addr.S_un.S_addr = ADDR_ANY;
     ServerHint.sin_family = AF_INET;
     ServerHint.sin_port = htons(Data->Rport);
     
-    
+    // TODO(Barret5Ocal): Is binding even nessesary for a peer to peer game
     if(bind(Data->in, (sockaddr*)&ServerHint, sizeof(ServerHint)) == SOCKET_ERROR)
     {
         Console.AddLog("Can't bind socket! %d\n", WSAGetLastError());
         //printf("Can't bind socket! %d\n", WSAGetLastError());
         return 1;
     }
+    
+    
+    if(connect(Data->out, (struct sockaddr *)&Data->Server, sizeof(Data->Server)) == -1)
+    {
+        Console.AddLog("Can't connect socket! %d\n", WSAGetLastError());
+        //printf("Can't bind socket! %d\n", WSAGetLastError());
+        return 1;
+    }
+    
     
 #if IOCP
     Data->Master = CreateIoCompletionPort (INVALID_HANDLE_VALUE,
@@ -133,6 +146,7 @@ int NetworkSetup(network_data *Data, char * ip, int Sport, int Rport)
     ZeroMemory(&Data->Client, sizeof(Data->Client));
     Data->ClientLength = sizeof(Data->Client);
     
+    Console.AddLog("Finished Setup");
     return 0;
 }
 

@@ -258,10 +258,14 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         network_data Data = {};
         
         
-        char port[5] = {};
-        char RemotePort[5] = {};
+        char port[5] = {"5400"};
+        char RemotePort[5] = {"5200"};
         char NetworkMessage[51] = {}; 
-        char IP[15] = "68.98.76.230";
+        char LocalIP[56] = {"68.98.76.230"};
+        char RemoteIP[56] = {"68.98.76.230"};
+        
+        //char LocalIP[56] = {"68.98.76.230:5400"};
+        //char RemoteIP[56] = {"68.98.76.230:5200"};
         
         //int Sindex = 0;
         //char Sbuff[255] = {};
@@ -304,12 +308,6 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
             
             ImGuiIO& io = ImGui::GetIO();
             
-#if 0
-            for(int i = 0;
-                i < 256;
-                i++)
-                io.KeysDown[i] = Keyboard[i];
-#endif
             
             POINT Point = {}; 
             GetCursorPos(&Point);
@@ -342,11 +340,17 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 ImGui::Button("StartUp");
                 ImGui::InputText("Sport", port, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
                 ImGui::InputText("Rport", RemotePort, sizeof(char) * 5, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
-                ImGui::InputText("IP", IP, ArrayCount(IP), ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsNoBlank);
+                
+                
+                //ImGui::InputText("Local IP", LocalIP, ArrayCount(LocalIP), ImGuiInputTextFlags_CharsNoBlank);
+                
+                ImGui::InputText("Remote IP", RemoteIP, ArrayCount(RemoteIP), ImGuiInputTextFlags_CharsNoBlank);
+                
                 
                 if (ImGui::Button("Get Socket"))
                 {
-                    NetworkSetup(&Data, IP, atoi(port), atoi(RemotePort));
+                    //SetSocket(&Data, LocalIP, RemoteIP);
+                    NetworkSetup(&Data, RemoteIP, atoi(port), atoi(RemotePort) );
                     
                 }
                 
