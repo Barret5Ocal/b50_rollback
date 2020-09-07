@@ -105,7 +105,8 @@ int NetworkSetup(network_data *Data, char * ip, int Sport, int Rport)
     
     sockaddr_in ServerHint; 
     //inet_pton(AF_INET, ip, &ServerHint.sin_addr);
-    ServerHint.sin_addr.S_un.S_addr = ADDR_ANY;
+    //ServerHint.sin_addr.S_un.S_addr = ADDR_ANY;
+    ServerHint.sin_addr.s_addr = htonl(INADDR_ANY);
     ServerHint.sin_family = AF_INET;
     ServerHint.sin_port = htons(Data->Rport);
     
@@ -117,14 +118,14 @@ int NetworkSetup(network_data *Data, char * ip, int Sport, int Rport)
         return 1;
     }
     
-    
+#if 0
     if(connect(Data->out, (struct sockaddr *)&Data->Server, sizeof(Data->Server)) == -1)
     {
         Console.AddLog("Can't connect socket! %d\n", WSAGetLastError());
         //printf("Can't bind socket! %d\n", WSAGetLastError());
         return 1;
     }
-    
+#endif
     
 #if IOCP
     Data->Master = CreateIoCompletionPort (INVALID_HANDLE_VALUE,
