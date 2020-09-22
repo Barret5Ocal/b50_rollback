@@ -262,10 +262,9 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         char RemotePort[5] = {"5200"};
         char NetworkMessage[51] = {}; 
         char LocalIP[56] = {"68.98.76.230"};
-        char RemoteIP[56] = {"68.98.76.230"};
-        
-        //char LocalIP[56] = {"68.98.76.230:5400"};
-        //char RemoteIP[56] = {"68.98.76.230:5200"};
+        //char RemoteIP[56] = {"68.98.76.230"};
+        //char RemoteIP[56] = {"127.0.0.1"};
+        char RemoteIP[56] = {"192.168.1.3"};
         
         //int Sindex = 0;
         //char Sbuff[255] = {};
