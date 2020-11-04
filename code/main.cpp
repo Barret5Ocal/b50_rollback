@@ -258,13 +258,13 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
         network_data Data = {};
         
         
-        char port[5] = {"5400"};
+        char port[5] = {"22"};
         char RemotePort[5] = {"5200"};
         char NetworkMessage[51] = {}; 
         char LocalIP[56] = {"68.98.76.230"};
-        //char RemoteIP[56] = {"68.98.76.230"};
-        //char RemoteIP[56] = {"127.0.0.1"};
-        char RemoteIP[56] = {"192.168.1.3"};
+        //char RemoteIP[56] = .{"68.98.76.230"};
+        char RemoteIP[56] = {"127.0.0.1"};
+        //char RemoteIP[56] = {"192.168.1.3"};
         
         //int Sindex = 0;
         //char Sbuff[255] = {};
@@ -354,7 +354,7 @@ int WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR     CmdLine, int  
                 }
                 
                 if(ImGui::Button("Get Address"))
-                    GetAddress(&Data);
+                    GetAddress(&Data, RemoteIP);
                 ImGui::End();
             }
             

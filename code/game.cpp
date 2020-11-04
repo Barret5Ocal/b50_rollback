@@ -15,7 +15,6 @@
 
 struct gamestate
 {
-    
     b50_input_buffer *Input1;
     v2 Player1Position;
     rect2 Player1Hitbox[4];
@@ -24,7 +23,6 @@ struct gamestate
     b50_input_buffer *Input2;
     v2 Player2Position;
     rect2 Player2Hitbox[4];
-    
     
     int GameStart;
 };

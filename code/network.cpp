@@ -36,7 +36,7 @@ int StartUpNetwork()
 }
 
 
-void GetAddress(network_data *Data)
+void GetAddress(network_data *Data, char *IP)
 {
     
     int status;
@@ -48,7 +48,7 @@ void GetAddress(network_data *Data)
     hints.ai_socktype = SOCK_DGRAM; // TCP stream sockets
     //hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
     
-    if ((status = getaddrinfo(NULL, "3490", &hints, &servinfo)) != 0) {
+    if ((status = getaddrinfo(IP, "3490", &hints, &servinfo)) != 0) {
         Console.AddLog("getaddrinfo error: %s\n", gai_strerror(status));
         //InvalidCodePath;
     }
